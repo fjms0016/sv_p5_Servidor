@@ -35,7 +35,8 @@ public class Connection implements Runnable {
 	public void run() {
 		String inputData = null;
 		String outputData = "";
-		String comando,payload,user="",pass="";
+		String comando,user="",pass="";
+		String payload;
 		byte version=0, tipo=0,VERSION=1;
 		int estado = 0,secuencia;
 		Authentication auth = new Authentication("");
@@ -49,10 +50,10 @@ public class Connection implements Runnable {
 
 				while ((inputData = input.readLine()) != "" || (inputData = input.readLine()) != "QUIT" ) {
 					System.out.println("Servidor [Recibido]> " + inputData);
-					String campos[] = inputData.split(" ");
+					String[] campos = inputData.split(" ");
 					
 					if (campos.length==1){
-						if(inputData.equalsIgnoreCase("")||inputData.equalsIgnoreCase("QUIT")){
+						if(inputData.equalsIgnoreCase("")||inputData.equalsIgnoreCase(QUIT)){
 							outputData="Has salido";
 							break;
 						}
@@ -69,18 +70,19 @@ public class Connection implements Runnable {
 						tipo = Byte.parseByte(campos[2]);
 						comando = campos[3];
 						payload = campos [4];
-
+						
 						switch (estado) {
 
 						case 0:
 							if (version==1 && tipo== MSG_LOGIN && comando.equalsIgnoreCase(OK)) {
 								//Comprobamos el usuario y su contraseña
-								user = payload.substring(0,6);
-								pass = payload.substring(6, payload.length());
+								String[] credencial = payload.split("_");
+								user=credencial[0];
+								pass = credencial[1];
 								auth = new Authentication(user);
 								//Comprobamos que exista el usuario y que la contraseña sea correcta
 								if (auth.open(user)==true && auth.checkKey(pass) == true) {	
-									outputData = CRLF+VERSION + secuencia + 1 + MSG_LOGIN + OK+CRLF;
+									outputData = CRLF+VERSION + secuencia + 1 + MSG_LOGIN + OK + "Realiza la operacion"+CRLF;
 									
 									estado++;
 								}
@@ -94,33 +96,55 @@ public class Connection implements Runnable {
 									outputData = "ERROR [" + user + "] CONTRASENA INCORRECTA\r\n";
 								}
 								
+								else if (tipo!=MSG_LOGIN){
+									outputData = "ERROR [" + inputData + "] TIPO DE MENSAJE INCORRECTO\r\n";
+									
+								}
+								
 							//Hacer comprobacion version tipo y comando
 							}
 							break;
+						
+
 						case 1:
-							break;
 
-						case 2:
-
-							if (comando.length() == 4) {
-								if (comando.equalsIgnoreCase("POWR")) {
+							if (comando.length() == 3 && version==1 && tipo==MSG_OPERACION) {
+								if (comando.equalsIgnoreCase("SIN")) {
 
 									try {
-										String power = String
-												.valueOf(Integer.parseInt(comando) * Integer.parseInt(comando));
-										outputData = "OK " + comando + " EL CUADRADO = " + power + "\r\n";
+										String sin = String
+												.valueOf(Math.sin(Double.parseDouble(payload)));
+										outputData = "OK " + comando + " el seno  es = " + sin + "\r\n";
 
 									} catch (NumberFormatException ex) {
 										outputData = "ERROR FORMATO DE NUMERO INCORRECTO\r\n";
 									}
-								} else
+								} else if(comando.equalsIgnoreCase("COS")){
+									try {
+										String cos = String
+												.valueOf(Math.cos(Double.parseDouble(payload)));
+										outputData = CRLF+"OK " + comando + " el coseno  es = " + cos + "\r\n";
 
-									outputData = "OK [" + comando + "] " + " PARAMETRO= " +   "\r\n";
-
-							} else
+									} catch (NumberFormatException ex) {
+										outputData = "ERROR FORMATO DE NUMERO INCORRECTO\r\n";
+									}
+								}
+								
+								else
+									outputData = "ERROR COMANDO DESCONOCIDO\r\n";
+									
+							}
+							else if(version!=1)
+								outputData = "ERROR VERSION INCORRECTA\r\n";
+							
+							else if (tipo!=MSG_OPERACION)
+								outputData = "ERROR TIPO DE MENSAJE INCORRECTO\r\n";
+							
+							else
 								outputData = "ERROR COMANDO DESCONOCIDO\r\n";
 							break;
 						}
+						
 					} else
 						outputData = "ERROR [" + inputData + "] NO ES UN COMANDO VALIDO\r\n";
 
