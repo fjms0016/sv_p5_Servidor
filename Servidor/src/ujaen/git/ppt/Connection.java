@@ -57,14 +57,21 @@ public class Connection implements Runnable {
 							outputData="Has salido";
 							break;
 						}
-						else outputData = "ERROR [" + inputData + "] NO ES UN COMANDO VALIDO\r\n";
+						else outputData = ERR+" [" + inputData + "] NO ES UN COMANDO VALIDO\r\n";
 					}
 
 					else if (campos.length == 5) {
 						try{
 						version = Byte.parseByte(campos[0]);
+						if(version!=1){
+							outputData = ERR+" [" + version + "] VERSION NO VALIDA\r\n";
+							break;
+
+						}
 						} catch(NumberFormatException e){
 							//Acciones asociadas a una version invalida
+							outputData = ERR+" [" + version + "] FORMATO DE VERSION NO VALIDO\r\n";
+							break;
 						}
 						secuencia = Integer.parseInt(campos[1]);
 						tipo = Byte.parseByte(campos[2]);
@@ -82,26 +89,33 @@ public class Connection implements Runnable {
 								auth = new Authentication(user);
 								//Comprobamos que exista el usuario y que la contraseña sea correcta
 								if (auth.open(user)==true && auth.checkKey(pass) == true) {	
-									outputData = CRLF+VERSION + secuencia + 1 + MSG_LOGIN + OK + "Realiza la operacion"+CRLF;
+									outputData = VERSION+ " " + secuencia+ " "+ MSG_LOGIN + OK +CRLF+ "Realiza la operacion"+CRLF;
 									
 									estado++;
 								}
 								
 								else if (auth.open(user)==false){
-									outputData = "ERROR [" + user + "] NO ES UN USUARIO REGISTRADO\r\n";
+									outputData = ERR+" [" + user + "] NO ES UN USUARIO REGISTRADO\r\n";
 									
 								}
 								
 								else if (auth.open(user)==true && auth.checkKey(pass) == false){
-									outputData = "ERROR [" + user + "] CONTRASENA INCORRECTA\r\n";
+									outputData = ERR+" [" + user + "] CONTRASENA INCORRECTA\r\n";
 								}
 								
-								else if (tipo!=MSG_LOGIN){
-									outputData = "ERROR [" + inputData + "] TIPO DE MENSAJE INCORRECTO\r\n";
-									
-								}
+								
 								
 							//Hacer comprobacion version tipo y comando
+							}
+							
+							else if (tipo!=MSG_LOGIN){
+								outputData = ERR+" [" + inputData + "] TIPO DE MENSAJE INCORRECTO\r\n";
+								
+							}
+							
+							else if(comando!=OK){
+								outputData = ERR+" [" + comando + "] COMANDO INCORRECTO\r\n";
+
 							}
 							break;
 						
@@ -114,39 +128,38 @@ public class Connection implements Runnable {
 									try {
 										String sin = String
 												.valueOf(Math.sin(Double.parseDouble(payload)));
-										outputData = "OK " + comando + " el seno  es = " + sin + "\r\n";
+										outputData = "OK " + user + " el seno  es = " + sin + "\r\n";
 
 									} catch (NumberFormatException ex) {
-										outputData = "ERROR FORMATO DE NUMERO INCORRECTO\r\n";
+										outputData = ERR+" FORMATO DE NUMERO INCORRECTO\r\n";
 									}
 								} else if(comando.equalsIgnoreCase("COS")){
 									try {
 										String cos = String
 												.valueOf(Math.cos(Double.parseDouble(payload)));
-										outputData = CRLF+"OK " + comando + " el coseno  es = " + cos + "\r\n";
+										outputData = CRLF+"OK " + user + " el coseno  es = " + cos + "\r\n";
 
 									} catch (NumberFormatException ex) {
-										outputData = "ERROR FORMATO DE NUMERO INCORRECTO\r\n";
+										outputData = ERR+" FORMATO DE NUMERO INCORRECTO\r\n";
 									}
 								}
 								
 								else
-									outputData = "ERROR COMANDO DESCONOCIDO\r\n";
+									outputData = ERR+" COMANDO DESCONOCIDO\r\n";
 									
 							}
-							else if(version!=1)
-								outputData = "ERROR VERSION INCORRECTA\r\n";
+							
 							
 							else if (tipo!=MSG_OPERACION)
-								outputData = "ERROR TIPO DE MENSAJE INCORRECTO\r\n";
+								outputData = ERR+" TIPO DE MENSAJE INCORRECTO\r\n";
 							
 							else
-								outputData = "ERROR COMANDO DESCONOCIDO\r\n";
+								outputData = ERR+" COMANDO DESCONOCIDO\r\n";
 							break;
 						}
 						
 					} else
-						outputData = "ERROR [" + inputData + "] NO ES UN COMANDO VALIDO\r\n";
+						outputData = ERR+" [" + inputData + "] NO ES UN COMANDO VALIDO\r\n";
 
 					output.write(outputData.getBytes());
 
