@@ -38,8 +38,8 @@ public class Authentication {
 	 * @return
 	 */
 	protected boolean open(String user) {
-		File file = new File(user);
-		if (file.isDirectory()) {
+		File file = new File(user+".key");
+		if (file.exists()) {
 			return true;
 		} else
 			return false;
